@@ -665,6 +665,7 @@
 
 // smart pointers
 
+use std::cell::RefCell;
 use std::ops::Deref;
 
 #[derive(Debug)]
@@ -720,6 +721,12 @@ enum ListRc {
     None
 }
 
+#[derive(Debug)]
+enum ListCyclic {
+    Cons(i32, RefCell<Rc<ListCyclic>>),
+    None
+}
+
 fn main() {
     let cons_list = Rc::new(ListRc::Cons(1, 
         Rc::new(ListRc::Cons(2, 
@@ -736,4 +743,30 @@ fn main() {
     }
     println!("{:?}", cons_list_a);
     println!("{}", Rc::strong_count(&cons_list));
+    // test();
+
+    let a = Rc::new(ListCyclic::Cons(5, RefCell::new(Rc::new(ListCyclic::None))));
+    println!("a-count {}", Rc::strong_count(&a));
+
+    let b = Rc::new(ListCyclic::Cons(10, RefCell::new(Rc::clone(&a))));
+
+
+    match a.as_ref() {
+        ListCyclic::Cons(_, list) => {
+            *list.borrow_mut() = Rc::clone(&b);
+        },
+        ListCyclic::None => ()
+    }
+    println!("a-count {}, b-count {}", Rc::strong_count(&a), Rc::strong_count(&b));
+}
+
+
+fn test() {
+    let a = RefCell::new(12);
+    let b: *mut i32 = a.as_ptr();
+    unsafe {
+        *b = 20;
+        let b = *b;
+    }
+    println!("a : {:?}, b : {:?}", a, b);
 }
