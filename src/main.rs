@@ -665,108 +665,229 @@
 
 // smart pointers
 
-use std::cell::RefCell;
-use std::ops::Deref;
+// use std::cell::RefCell;
+// use std::ops::Deref;
 
-#[derive(Debug)]
-enum List {
-    Cons(i32, Box<List>),
-    None,
-}
+// #[derive(Debug)]
+// enum List {
+//     Cons(i32, Box<List>),
+//     None,
+// }
 
-#[derive(Debug)]
-struct MyBox<T> {
-    value : T
-}
+// #[derive(Debug)]
+// struct MyBox<T> {
+//     value : T
+// }
 
-impl<T> MyBox<T> {
-    fn from(value : T) -> MyBox<T> {
-        MyBox { value }
-    }
-}
+// impl<T> MyBox<T> {
+//     fn from(value : T) -> MyBox<T> {
+//         MyBox { value }
+//     }
+// }
 
-impl<T> Deref for MyBox<T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
+// impl<T> Deref for MyBox<T> {
+//     type Target = T;
+//     fn deref(&self) -> &Self::Target {
+//         &self.value
+//     }
+// }
 
-fn main_box() {
-    let cons_list = List::Cons(1, 
-        Box::new(List::Cons(2, 
-            Box::new(List::None
-        )))
-    );
-    // println!("{:?}", cons_list);
-    // let node2 = append_node();
-    // let mut my_list = List::Cons(1, &node2);
+// fn main_box() {
+//     let cons_list = List::Cons(1, 
+//         Box::new(List::Cons(2, 
+//             Box::new(List::None
+//         )))
+//     );
+//     // println!("{:?}", cons_list);
+//     // let node2 = append_node();
+//     // let mut my_list = List::Cons(1, &node2);
 
-    let cons_list_a = List::Cons(0, Box::new(cons_list));
-    println!("{:?}", cons_list_a);
+//     let cons_list_a = List::Cons(0, Box::new(cons_list));
+//     println!("{:?}", cons_list_a);
 
 
-    let mut x = 5;
-    let y = MyBox::from(x);
-    // drop(y);
-    x = 120;
-    // assert_eq!(x, *y);
-    println!("{x}, {:?}", y)
-}
+//     let mut x = 5;
+//     let y = MyBox::from(x);
+//     // drop(y);
+//     x = 120;
+//     // assert_eq!(x, *y);
+//     println!("{x}, {:?}", y)
+// }
 
+// use std::rc::Rc;
+// #[derive(Debug)]
+// enum ListRc {
+//     Cons(i32, Rc<ListRc>),
+//     None
+// }
+
+// #[derive(Debug)]
+// enum ListCyclic {
+//     Cons(i32, RefCell<Rc<ListCyclic>>),
+//     None
+// }
+
+// fn main() {
+//     let cons_list = Rc::new(ListRc::Cons(1, 
+//         Rc::new(ListRc::Cons(2, 
+//             Rc::new(ListRc::None
+//         )))
+//     ));
+
+//     println!("{}", Rc::strong_count(&cons_list));
+//     let cons_list_a = Rc::new(ListRc::Cons(0, Rc::clone(&cons_list)));
+//     println!("{}", Rc::strong_count(&cons_list));
+//     {
+//         let cons_list_b = Rc::new(ListRc::Cons(-1, Rc::clone(&cons_list)));
+//         println!("{}", Rc::strong_count(&cons_list));
+//     }
+//     println!("{:?}", cons_list_a);
+//     println!("{}", Rc::strong_count(&cons_list));
+//     // test();
+
+//     let a = Rc::new(ListCyclic::Cons(5, RefCell::new(Rc::new(ListCyclic::None))));
+//     println!("a-count {}", Rc::strong_count(&a));
+
+//     let b = Rc::new(ListCyclic::Cons(10, RefCell::new(Rc::clone(&a))));
+
+
+//     match a.as_ref() {
+//         ListCyclic::Cons(_, list) => {
+//             *list.borrow_mut() = Rc::clone(&b);
+//         },
+//         ListCyclic::None => ()
+//     }
+//     println!("a-count {}, b-count {}", Rc::strong_count(&a), Rc::strong_count(&b));
+// }
+
+
+// fn test() {
+//     let a = RefCell::new(12);
+//     let b: *mut i32 = a.as_ptr();
+//     unsafe {
+//         *b = 20;
+//         let b = *b;
+//     }
+//     println!("a : {:?}, b : {:?}", a, b);
+// }
+
+// Threads
 use std::rc::Rc;
-#[derive(Debug)]
-enum ListRc {
-    Cons(i32, Rc<ListRc>),
-    None
-}
-
-#[derive(Debug)]
-enum ListCyclic {
-    Cons(i32, RefCell<Rc<ListCyclic>>),
-    None
-}
+use std::sync::Arc;
+use std::thread;
+use std::sync::mpsc;
+use std::sync::Mutex;
+use std::thread::JoinHandle;
+use std::time::Duration;
 
 fn main() {
-    let cons_list = Rc::new(ListRc::Cons(1, 
-        Rc::new(ListRc::Cons(2, 
-            Rc::new(ListRc::None
-        )))
-    ));
-
-    println!("{}", Rc::strong_count(&cons_list));
-    let cons_list_a = Rc::new(ListRc::Cons(0, Rc::clone(&cons_list)));
-    println!("{}", Rc::strong_count(&cons_list));
-    {
-        let cons_list_b = Rc::new(ListRc::Cons(-1, Rc::clone(&cons_list)));
-        println!("{}", Rc::strong_count(&cons_list));
+    let handle = thread::spawn(|| {
+        for i in 0..10 {
+            println!("index {i} from secondary thread");
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
+    
+    for i in 0..5 {
+        println!("index {i} from main thread");
+        thread::sleep(Duration::from_millis(1));
     }
-    println!("{:?}", cons_list_a);
-    println!("{}", Rc::strong_count(&cons_list));
-    // test();
+    handle.join().unwrap();
 
-    let a = Rc::new(ListCyclic::Cons(5, RefCell::new(Rc::new(ListCyclic::None))));
-    println!("a-count {}", Rc::strong_count(&a));
+    let new_vec = vec![1,2,3];
 
-    let b = Rc::new(ListCyclic::Cons(10, RefCell::new(Rc::clone(&a))));
+    let handle = thread::spawn(move || {
+        println!("vec value {:?}", new_vec);
+        // panic!("something went wrong");
+    });
 
-
-    match a.as_ref() {
-        ListCyclic::Cons(_, list) => {
-            *list.borrow_mut() = Rc::clone(&b);
-        },
-        ListCyclic::None => ()
-    }
-    println!("a-count {}, b-count {}", Rc::strong_count(&a), Rc::strong_count(&b));
+    handle.join().unwrap();
+    // thread::sleep(Duration::from_millis(1000));
+    inter_thread_communication();
 }
 
+fn inter_thread_communication() {
+    let (tx, rx) = mpsc::channel::<&str>();
+    // let tx = Rc::new(tx);
+    let tx1 = tx.clone();
 
-fn test() {
-    let a = RefCell::new(12);
-    let b: *mut i32 = a.as_ptr();
-    unsafe {
-        *b = 20;
-        let b = *b;
+    let handle = thread::spawn(move || {
+        let vec_str = vec!["1", "2", "3"];
+        for curr_str in vec_str {
+            let _val = tx.send(curr_str).unwrap();
+            thread::sleep(Duration::from_millis(100));
+        }
+    });
+    // let _val = tx.send("msg from first thread").unwrap();
+    thread::spawn(move || {
+        let vec_str = vec!["4", "5", "6"];
+        for curr_str in vec_str {
+            let _val = tx1.send(curr_str).unwrap();
+            thread::sleep(Duration::from_millis(100));
+        }
+    });
+
+    // let received_data: Vec<&str> = rx.iter().collect();
+    // println!("received data: {:?}", received_data);
+    for received in rx {
+        println!("data: {}", received)
     }
-    println!("a : {:?}, b : {:?}", a, b);
+    // handle.join().unwrap();
+
+    // MUTEX
+    let n = Mutex::new(5);
+    {
+        let mut x = Mutex::lock(&n).unwrap();
+        *x += 1;
+    }
+    println!("n value {:?}", n);
+
+    let counter = Arc::new(Mutex::new(10));
+    let mut thread_handles: Vec<JoinHandle<()>> = vec![];
+    for i in 0..10 {
+        let curr_arc_counter: Arc<Mutex<i32>> = Arc::clone(&counter);
+        let handle = thread::spawn(move || {
+            let mut curr_counter: std::sync::MutexGuard<'_, _> = Mutex::lock(&curr_arc_counter).unwrap();
+            *curr_counter += 1;
+        });
+        thread_handles.push(handle);
+    }
+
+    for handle in thread_handles {
+        handle.join().unwrap();
+    }
+
+    println!("final counter : {:?}", counter);
+
+    // deadlock
+    let counter_1 = Arc::new(Mutex::new(5));
+    let counter_2 = Arc::new(Mutex::new(5));
+    let handle1 = thread::spawn({
+        let counter_1_clone = Arc::clone(&counter_1);
+        let counter_2_clone = Arc::clone(&counter_2);
+        move || {
+            let mut counter_1_ref = Mutex::lock(&counter_1_clone).unwrap();
+            thread::sleep(Duration::from_millis(1));
+            *counter_1_ref += 1;
+            let mut counter_2_ref = Mutex::lock(&counter_2_clone).unwrap();
+            *counter_2_ref += 1;
+        }
+    });
+    let handle2 = thread::spawn({
+        let counter_1_clone = Arc::clone(&counter_1);
+        let counter_2_clone = Arc::clone(&counter_2);
+        move || {
+            let mut counter_2_ref = Mutex::lock(&counter_2_clone).unwrap();
+            thread::sleep(Duration::from_millis(1));
+            *counter_2_ref += 1;
+            let mut counter_1_ref = Mutex::lock(&counter_1_clone).unwrap();
+            *counter_1_ref += 1;
+        }
+    });
+    
+    handle1.join().unwrap();
+    handle2.join().unwrap();
+
+    // thread::sleep(Duration::from_secs(3));
+    println!("counter1: {:?}, counter_2 {:?}", counter_1, counter_2);
 }
