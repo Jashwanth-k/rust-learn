@@ -771,6 +771,7 @@
 //     println!("a : {:?}, b : {:?}", a, b);
 // }
 
+use std::fmt::format;
 // Threads
 use std::rc::Rc;
 use std::sync::Arc;
@@ -779,115 +780,271 @@ use std::sync::mpsc;
 use std::sync::Mutex;
 use std::thread::JoinHandle;
 use std::time::Duration;
+use std::vec;
 
-fn main() {
-    let handle = thread::spawn(|| {
-        for i in 0..10 {
-            println!("index {i} from secondary thread");
-            thread::sleep(Duration::from_millis(1));
-        }
-    });
+// fn main() {
+//     let handle = thread::spawn(|| {
+//         for i in 0..10 {
+//             println!("index {i} from secondary thread");
+//             thread::sleep(Duration::from_millis(1));
+//         }
+//     });
     
-    for i in 0..5 {
-        println!("index {i} from main thread");
-        thread::sleep(Duration::from_millis(1));
+//     for i in 0..5 {
+//         println!("index {i} from main thread");
+//         thread::sleep(Duration::from_millis(1));
+//     }
+//     handle.join().unwrap();
+
+//     let new_vec = vec![1,2,3];
+
+//     let handle = thread::spawn(move || {
+//         println!("vec value {:?}", new_vec);
+//         // panic!("something went wrong");
+//     });
+
+//     handle.join().unwrap();
+//     // thread::sleep(Duration::from_millis(1000));
+//     inter_thread_communication();
+// }
+
+// fn inter_thread_communication() {
+//     let (tx, rx) = mpsc::channel::<&str>();
+//     // let tx = Rc::new(tx);
+//     let tx1 = tx.clone();
+
+//     let handle = thread::spawn(move || {
+//         let vec_str = vec!["1", "2", "3"];
+//         for curr_str in vec_str {
+//             let _val = tx.send(curr_str).unwrap();
+//             thread::sleep(Duration::from_millis(100));
+//         }
+//     });
+//     // let _val = tx.send("msg from first thread").unwrap();
+//     thread::spawn(move || {
+//         let vec_str = vec!["4", "5", "6"];
+//         for curr_str in vec_str {
+//             let _val = tx1.send(curr_str).unwrap();
+//             thread::sleep(Duration::from_millis(100));
+//         }
+//     });
+
+//     // let received_data: Vec<&str> = rx.iter().collect();
+//     // println!("received data: {:?}", received_data);
+//     for received in rx {
+//         println!("data: {}", received)
+//     }
+//     // handle.join().unwrap();
+
+//     // MUTEX
+//     let n = Mutex::new(5);
+//     {
+//         let mut x = Mutex::lock(&n).unwrap();
+//         *x += 1;
+//     }
+//     println!("n value {:?}", n);
+
+//     let counter = Arc::new(Mutex::new(10));
+//     let mut thread_handles: Vec<JoinHandle<()>> = vec![];
+//     for i in 0..10 {
+//         let curr_arc_counter: Arc<Mutex<i32>> = Arc::clone(&counter);
+//         let handle = thread::spawn(move || {
+//             let mut curr_counter: std::sync::MutexGuard<'_, _> = Mutex::lock(&curr_arc_counter).unwrap();
+//             *curr_counter += 1;
+//         });
+//         thread_handles.push(handle);
+//     }
+
+//     for handle in thread_handles {
+//         handle.join().unwrap();
+//     }
+
+//     println!("final counter : {:?}", counter);
+
+//     // deadlock
+//     let counter_1 = Arc::new(Mutex::new(5));
+//     let counter_2 = Arc::new(Mutex::new(5));
+//     let handle1 = thread::spawn({
+//         let counter_1_clone = Arc::clone(&counter_1);
+//         let counter_2_clone = Arc::clone(&counter_2);
+//         move || {
+//             let mut counter_1_ref = Mutex::lock(&counter_1_clone).unwrap();
+//             thread::sleep(Duration::from_millis(1));
+//             *counter_1_ref += 1;
+//             let mut counter_2_ref = Mutex::lock(&counter_2_clone).unwrap();
+//             *counter_2_ref += 1;
+//         }
+//     });
+//     let handle2 = thread::spawn({
+//         let counter_1_clone = Arc::clone(&counter_1);
+//         let counter_2_clone = Arc::clone(&counter_2);
+//         move || {
+//             let mut counter_2_ref = Mutex::lock(&counter_2_clone).unwrap();
+//             thread::sleep(Duration::from_millis(1));
+//             *counter_2_ref += 1;
+//             let mut counter_1_ref = Mutex::lock(&counter_1_clone).unwrap();
+//             *counter_1_ref += 1;
+//         }
+//     });
+    
+//     handle1.join().unwrap();
+//     handle2.join().unwrap();
+
+//     // thread::sleep(Duration::from_secs(3));
+//     println!("counter1: {:?}, counter_2 {:?}", counter_1, counter_2);
+// }
+
+// async
+
+use reqwest;
+use reqwest::Error;
+// use std::pin::Pin;
+// use std::future::Future;
+use std::task::{Context, Poll};
+use trpl;
+
+async fn get_data(url: &str) -> Result<String, Error> {
+    let client = reqwest::Client::new();
+    let resp = client.get(url).send().await;
+    let resp_data = resp.unwrap().text().await;
+    match resp_data {
+        Ok(res) => Ok(res),
+        Err(err) => Err(err),
     }
-    handle.join().unwrap();
-
-    let new_vec = vec![1,2,3];
-
-    let handle = thread::spawn(move || {
-        println!("vec value {:?}", new_vec);
-        // panic!("something went wrong");
-    });
-
-    handle.join().unwrap();
-    // thread::sleep(Duration::from_millis(1000));
-    inter_thread_communication();
+    // return resp_data;
 }
 
-fn inter_thread_communication() {
-    let (tx, rx) = mpsc::channel::<&str>();
-    // let tx = Rc::new(tx);
-    let tx1 = tx.clone();
+use executor::*;
+use std::pin::{Pin, pin};
 
-    let handle = thread::spawn(move || {
-        let vec_str = vec!["1", "2", "3"];
-        for curr_str in vec_str {
-            let _val = tx.send(curr_str).unwrap();
-            thread::sleep(Duration::from_millis(100));
-        }
-    });
-    // let _val = tx.send("msg from first thread").unwrap();
-    thread::spawn(move || {
-        let vec_str = vec!["4", "5", "6"];
-        for curr_str in vec_str {
-            let _val = tx1.send(curr_str).unwrap();
-            thread::sleep(Duration::from_millis(100));
-        }
-    });
+fn slowBlocking(operType : &str, ms : u32) {
+    thread::sleep(Duration::from_millis(ms.into()));
+    println!("{operType} finished after {ms}")
+}
 
-    // let received_data: Vec<&str> = rx.iter().collect();
-    // println!("received data: {:?}", received_data);
-    for received in rx {
-        println!("data: {}", received)
-    }
-    // handle.join().unwrap();
-
-    // MUTEX
-    let n = Mutex::new(5);
-    {
-        let mut x = Mutex::lock(&n).unwrap();
-        *x += 1;
-    }
-    println!("n value {:?}", n);
-
-    let counter = Arc::new(Mutex::new(10));
-    let mut thread_handles: Vec<JoinHandle<()>> = vec![];
-    for i in 0..10 {
-        let curr_arc_counter: Arc<Mutex<i32>> = Arc::clone(&counter);
-        let handle = thread::spawn(move || {
-            let mut curr_counter: std::sync::MutexGuard<'_, _> = Mutex::lock(&curr_arc_counter).unwrap();
-            *curr_counter += 1;
-        });
-        thread_handles.push(handle);
-    }
-
-    for handle in thread_handles {
-        handle.join().unwrap();
-    }
-
-    println!("final counter : {:?}", counter);
-
-    // deadlock
-    let counter_1 = Arc::new(Mutex::new(5));
-    let counter_2 = Arc::new(Mutex::new(5));
-    let handle1 = thread::spawn({
-        let counter_1_clone = Arc::clone(&counter_1);
-        let counter_2_clone = Arc::clone(&counter_2);
-        move || {
-            let mut counter_1_ref = Mutex::lock(&counter_1_clone).unwrap();
-            thread::sleep(Duration::from_millis(1));
-            *counter_1_ref += 1;
-            let mut counter_2_ref = Mutex::lock(&counter_2_clone).unwrap();
-            *counter_2_ref += 1;
-        }
-    });
-    let handle2 = thread::spawn({
-        let counter_1_clone = Arc::clone(&counter_1);
-        let counter_2_clone = Arc::clone(&counter_2);
-        move || {
-            let mut counter_2_ref = Mutex::lock(&counter_2_clone).unwrap();
-            thread::sleep(Duration::from_millis(1));
-            *counter_2_ref += 1;
-            let mut counter_1_ref = Mutex::lock(&counter_1_clone).unwrap();
-            *counter_1_ref += 1;
-        }
-    });
+fn main() {
+    let mut future = Box::pin(get_data("https://example.com"));
+    // let data = trpl::run(get_data("https://example.com")).unwrap();
+    // let raced_data = trpl::run(
+    //     trpl::race(
+    //         get_data("https://example.com"),
+    //         get_data("https://google.com")
+    //         )
+    //     );
+    // let data = get_data("https://example.com");
     
-    handle1.join().unwrap();
-    handle2.join().unwrap();
+    // match raced_data {
+    //     trpl::Either::Left(data) => data,
+    //     trpl::Either::Right(data) => data,
+    // }
+    // loop {
+    //     match future.as_mut().poll(""),
+    // }
+    // println!("result data : {:?}", raced_data);
+    // trpl::run(async {
+    //     let handle = trpl::spawn_task(async {
+    //         for i in 0..5 {
+    //             println!("first task {}", i);
+    //             trpl::sleep(Duration::from_millis(250)).await;
+    //         }
+    //     });
+    //     for i in 0..2 {
+    //         println!("second task {}", i);
+    //         trpl::sleep(Duration::from_millis(250)).await;
+    //     }
+    //     handle.await.unwrap();
+    // });
+    let async1 = async {
+        for i in 0..10 {
+            println!("first task {}", i);
+            trpl::sleep(Duration::from_millis(250)).await;
+        }
+    };
+    let async2 = async {
+        for i in 0..5 {
+            println!("second task {}", i);
+            trpl::sleep(Duration::from_millis(250)).await;
+        }
+    };
 
-    // thread::sleep(Duration::from_secs(3));
-    println!("counter1: {:?}, counter_2 {:?}", counter_1, counter_2);
+    // let exec_data = executor::run(get_data("https://example.com"));
+    // println!("exec data {:?}", exec_data);
+    let result = trpl::join(async1, async2);
+    // trpl::run(result);
+
+    let (tx, mut rx) = trpl::channel::<String>();
+    let tx_clone = tx.clone();
+    let tx_fut = pin!(async move {
+        let vector_msgs = [
+            String::from("hi"),
+            String::from("from"),
+            String::from("the"),
+            String::from("future"),
+            ];
+        for i in vector_msgs {
+            // msg.insert_str(msg.len(), &format!("{}", i));
+            tx.send(i);
+            trpl::sleep(Duration::from_millis(400)).await;
+        }
+    });
+
+    let rx_fut = pin!(async {
+        while let data = rx.recv().await {
+            if data == None {
+                break;
+            }
+            println!("data : {:?}", data);
+        };
+    });
+
+    let tx2_fut = pin!(async move {
+        let vector_msgs = [
+            String::from("hi"),
+            String::from("from"),
+            String::from("the"),
+            String::from("future"),
+            ];
+        for i in vector_msgs {
+            // msg.insert_str(msg.len(), &format!("{}", i));
+            tx_clone.send(i);
+            trpl::sleep(Duration::from_millis(1000)).await;
+        }
+    });
+
+    let all_futures: [Pin<&mut dyn Future<Output = ()>>; 3]= [tx_fut, rx_fut, tx2_fut];
+    // trpl::run(trpl::join3(tx_fut, rx_fut, tx2_fut));
+    // trpl::run(trpl::join_all(all_futures));
+
+    let slow = async {
+        println!("slow started");
+        thread::sleep(Duration::from_millis(500));
+        println!("slow finished");
+    };
+    let fast = async {
+        println!("fast started");
+        thread::sleep(Duration::from_millis(20));
+        println!("fast finished");
+    };
+
+    // trpl::run(trpl::race(slow, fast));
+    let a = async {
+        slowBlocking("a", 50);
+        trpl::yield_now().await;
+        slowBlocking("a", 60);
+        trpl::yield_now().await;
+        slowBlocking("a", 70);
+        trpl::yield_now().await;
+    };
+    let b = async {
+        slowBlocking("b", 50);
+        trpl::yield_now().await;
+        slowBlocking("b", 60);
+        trpl::yield_now().await;
+        slowBlocking("b", 70);
+        trpl::yield_now().await;
+    };
+
+    // println!("started");
+    trpl::run(trpl::race(a, b));
+    println!("done finished execution");
 }

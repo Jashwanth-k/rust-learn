@@ -5,3 +5,6 @@ edition = "2024"
 
 [dependencies]
 sysinfo = "0.30"
+reqwest = "0.12.15"
+trpl = "0.2.0"
+executor = "0.8.4"
